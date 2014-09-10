@@ -36,7 +36,8 @@ void usage(void)
 {
 	fprintf(stderr, "Usage: listComPorts [-h] [-v] [-vid <vid>] [-pid <pid>]\n");
 	fprintf(stderr, "\t-vid <vid> : Search by Vendor ID\n");
-	fprintf(stderr, "\t-pid <pid> : Search by Product ID\n");
+	fprintf(stderr, "\t-papilio : Find Com Port of Papilio FPGA\n");
+	fprintf(stderr, "\t-arduino : Find Com Port of Papilio DUO Arduino ATmega32U4\n");
 	fprintf(stderr, "\t-v : Verbose output (more for more output)\n");
 	fprintf(stderr, "\t-h : This help message\n");
 	fprintf(stderr, "\nFor more info, https://github.com/todbot/usbSearch\n");
@@ -46,6 +47,8 @@ void usage(void)
 
 // command-line options
 int verbose = 0;
+int papilio=0;
+int arduino=0;
 char* VIDstr;
 char* PIDstr;
 
@@ -65,6 +68,10 @@ void parse_options(int argc, char **argv)
                 usage();
 			} else if (strcmp(arg, "-v") == 0) {
 				verbose++;
+			} else if (strcmp(arg, "-papilio") == 0) {
+				papilio++;
+			} else if (strcmp(arg, "-arduino") == 0) {
+				arduino++;				
 			} else if (strcmp(arg, "-vid") == 0) {
 				VIDstr = argv[++i];
 			} else if (strcmp(arg, "-pid") == 0) {
@@ -78,6 +85,7 @@ void parse_options(int argc, char **argv)
 // 
 int listComPorts(void)
 {
+
     if(verbose)
         printf("Searching for COM ports...\n");
 
@@ -110,13 +118,27 @@ int listComPorts(void)
                                                 
         if(verbose>1) printf("'%s'.\n", name);
         if( name != NULL && ((match = strstr( name, "(COM" )) != NULL) ) { // look for "(COM23)"
-            // 'Manufacturuer' can be null, so only get it if we need it
-            dhGetValue(L"%s", &manu, objDevice,  L".Manufacturer");
-            port_count++;
-            char* comname = strtok( match, "()");
-            //printf("%s - - %s - %s - %s\n",comname, name, manu, pnpid);
-			printf("%s - %s \n",comname, name);
-            dhFreeString(manu);
+			char* comname = strtok( match, "()");
+				// 'Manufacturuer' can be null, so only get it if we need it
+				dhGetValue(L"%s", &manu, objDevice,  L".Manufacturer");
+				port_count++;
+				
+				if (VIDstr != NULL) { //Are we searching for a VID
+					if( pnpid != NULL && ((match = strstr( pnpid, VIDstr )) != NULL) )// If searching for VID
+						printf("%s\n",comname);
+				} else if (papilio) {
+					if( pnpid != NULL && ((match = strstr( pnpid, "6&E45A42A&0&3&2" )) != NULL) )// If searching for Papilio FPGA serial
+						printf("%s\n",comname);	
+				} else if (arduino) {
+					if( pnpid != NULL && ((match = strstr( pnpid, "6&E45A42A&0&2" )) != NULL) )// If searching for Papilio FPGA serial
+						printf("%s\n",comname);							
+				} else {
+					if(verbose)
+						printf("%s - %s - %s - %s\n",comname, name, manu, pnpid);
+					else
+						printf("%s - %s \n",comname, name);
+				}
+				dhFreeString(manu);
         }
         
         dhFreeString(name);
@@ -133,7 +155,6 @@ int listComPorts(void)
         printf("Found %d port%s\n",port_count,(port_count==1)?"":"s");
     return 0;
 }
-
 
 
 //
