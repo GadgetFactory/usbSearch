@@ -38,6 +38,7 @@ void usage(void)
 	fprintf(stderr, "\t-vid <vid> : Search by Vendor ID\n");
 	fprintf(stderr, "\t-papilio : Find Com Port of Papilio FPGA\n");
 	fprintf(stderr, "\t-arduino : Find Com Port of Papilio DUO Arduino ATmega32U4\n");
+	fprintf(stderr, "\t-bootloader : Find Com Port of Papilio DUO Arduino ATmega32U4 Bootloader\n");
 	fprintf(stderr, "\t-v : Verbose output (more for more output)\n");
 	fprintf(stderr, "\t-h : This help message\n");
 	fprintf(stderr, "\nFor more info, https://github.com/todbot/usbSearch\n");
@@ -49,6 +50,7 @@ void usage(void)
 int verbose = 0;
 int papilio=0;
 int arduino=0;
+int bootloader=0;
 char* VIDstr;
 char* PIDstr;
 
@@ -71,7 +73,9 @@ void parse_options(int argc, char **argv)
 			} else if (strcmp(arg, "-papilio") == 0) {
 				papilio++;
 			} else if (strcmp(arg, "-arduino") == 0) {
-				arduino++;				
+				arduino++;	
+			} else if (strcmp(arg, "-bootloader") == 0) {
+				bootloader++;				
 			} else if (strcmp(arg, "-vid") == 0) {
 				VIDstr = argv[++i];
 			} else if (strcmp(arg, "-pid") == 0) {
@@ -104,6 +108,8 @@ int listComPorts(void)
 
 
     int port_count = 0;
+	int error = 1;
+	int found = 0;
 	dhToggleExceptions(FALSE);
 
     FOR_EACH(objDevice, colDevices, NULL) {
@@ -124,19 +130,52 @@ int listComPorts(void)
 				port_count++;
 				
 				if (VIDstr != NULL) { //Are we searching for a VID
-					if( pnpid != NULL && ((match = strstr( pnpid, VIDstr )) != NULL) )// If searching for VID
+					if( pnpid != NULL && ((match = strstr( pnpid, VIDstr )) != NULL) ) {// If searching for VID
 						printf("%s\n",comname);
+						error = 0;
+					}
 				} else if (papilio) {
-					if( pnpid != NULL && ((match = strstr( pnpid, "6&E45A42A&0&3&2" )) != NULL) )// If searching for Papilio FPGA serial
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_6010+FT" )) != NULL) ) {// If searching for Papilio FPGA serial
 						printf("%s\n",comname);	
+						found = 1;
+						error = 0;
+					}
+					else {
+						if (!found) {
+							//printf("No Papilio port detected.");
+							error = 1;
+						}
+					}
 				} else if (arduino) {
-					if( pnpid != NULL && ((match = strstr( pnpid, "6&E45A42A&0&2" )) != NULL) )// If searching for Papilio FPGA serial
-						printf("%s\n",comname);							
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_1D50&PID_60A5&MI_00" )) != NULL) ) {// If searching for Papilio FPGA serial
+						printf("%s\n",comname);	
+						found = 1;
+						error = 0;
+					}
+					else {
+						if (!found) {
+							//printf("No Arduino port detected.");
+							error = 1;
+						}					
+					}
+				} else if (bootloader) {
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_1D50&PID_60A4" )) != NULL) ) {// If searching for Papilio FPGA serial
+						printf("%s\n",comname);	
+						found = 1;
+						error = 0;
+					}
+					else {
+						if (!found) {
+							//printf("No Arduino port detected.");
+							error = 1;
+						}					
+					}					
 				} else {
 					if(verbose)
 						printf("%s - %s - %s - %s\n",comname, name, manu, pnpid);
 					else
 						printf("%s - %s \n",comname, name);
+					error = 0;
 				}
 				dhFreeString(manu);
         }
@@ -153,7 +192,10 @@ int listComPorts(void)
     
     if(verbose) 
         printf("Found %d port%s\n",port_count,(port_count==1)?"":"s");
-    return 0;
+	if(error)
+		return 1;
+	else
+		return 0;
 }
 
 
@@ -162,9 +204,7 @@ int main(int argc, char **argv)
 {
 	parse_options(argc, argv);
 
-    listComPorts();
-
-    return 0;
+    return listComPorts();
 
 }
 
