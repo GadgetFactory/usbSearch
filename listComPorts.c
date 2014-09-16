@@ -135,7 +135,7 @@ int listComPorts(void)
 						error = 0;
 					}
 				} else if (papilio) {
-					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_6010+FT" )) != NULL) ) {// If searching for Papilio FPGA serial
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_7BC0+FT" )) != NULL) ) {// If searching for Papilio FPGA serial
 						printf("%s\n",comname);	
 						found = 1;
 						error = 0;
