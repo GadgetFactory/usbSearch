@@ -36,6 +36,7 @@ void usage(void)
 {
 	fprintf(stderr, "Usage: listComPorts [-h] [-v] [-vid <vid>] [-pid <pid>]\n");
 	fprintf(stderr, "\t-vid <vid> : Search by Vendor ID\n");
+	fprintf(stderr, "\t-papilio-duo : Find Com Port of Papilio DUO FPGA\n");
 	fprintf(stderr, "\t-papilio : Find Com Port of Papilio FPGA\n");
 	fprintf(stderr, "\t-arduino : Find Com Port of Papilio DUO Arduino ATmega32U4\n");
 	fprintf(stderr, "\t-bootloader : Find Com Port of Papilio DUO Arduino ATmega32U4 Bootloader\n");
@@ -49,6 +50,7 @@ void usage(void)
 // command-line options
 int verbose = 0;
 int papilio=0;
+int papilioduo=0;
 int arduino=0;
 int bootloader=0;
 char* VIDstr;
@@ -72,6 +74,8 @@ void parse_options(int argc, char **argv)
 				verbose++;
 			} else if (strcmp(arg, "-papilio") == 0) {
 				papilio++;
+			} else if (strcmp(arg, "-papilio-duo") == 0) {
+				papilioduo++;				
 			} else if (strcmp(arg, "-arduino") == 0) {
 				arduino++;	
 			} else if (strcmp(arg, "-bootloader") == 0) {
@@ -135,7 +139,7 @@ int listComPorts(void)
 						error = 0;
 					}
 				} else if (papilio) {
-					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_7BC0+FT" )) != NULL) ) {// If searching for Papilio FPGA serial
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_6010" )) != NULL) ) {// If searching for Papilio FPGA serial
 						printf("%s\n",comname);	
 						found = 1;
 						error = 0;
@@ -146,6 +150,18 @@ int listComPorts(void)
 							error = 1;
 						}
 					}
+				} else if (papilioduo) {
+					if( pnpid != NULL && ((match = strstr( pnpid, "VID_0403+PID_7BC0" )) != NULL) ) {// If searching for Papilio DUO FPGA serial
+						printf("%s\n",comname);	
+						found = 1;
+						error = 0;
+					}
+					else {
+						if (!found) {
+							//printf("No Papilio port detected.");
+							error = 1;
+						}
+					}					
 				} else if (arduino) {
 					if( pnpid != NULL && ((match = strstr( pnpid, "VID_1D50&PID_60A5&MI_00" )) != NULL) ) {// If searching for Papilio FPGA serial
 						printf("%s\n",comname);	
